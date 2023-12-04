@@ -70,7 +70,66 @@ estim <- function(r, a, b, n){
 mc <- mclapply(1:1000, estim, a=2,b=5,n=100, mc.cores = 12)
 as <- unlist(mc)[seq(1, 1999, 2)]
 bs <- unlist(mc)[seq(2,2000,2)]
-hist(as)
+hist(as, main = "Histogram of alpha", xlab = "alpha")
 mean(as)
-hist(bs)
+hist(bs, main = "Histogram of beta", xlab = "beta")
 mean(bs)
+
+### Let's now do maximum likelihood inference using an approximate EM algorithm:
+## Sufficient statistics are: s = sum_{i<j} Y_ij and t = sum_{i<j} (1-Y_ij)
+sufficient <- function(m){
+  c(
+    sum(m[upper.tri(m)]),
+    sum(1 - m[upper.tri(m)])
+  )
+}
+
+# Expected log likelihood
+ellik <- function(a, b, n, s, t){
+  -n*lbeta(a,b) + 
+    s*2*(digamma(a) - digamma(a+b)) -
+    t*((a/(a+b))^2 + (a/(a+b))^4/2) +
+    n*(a-1)*(digamma(a) - digamma(a+b)) +
+    n*(b-1)*(digamma(b) - digamma(a+b))
+}
+
+
+ellik(200000,400000, n, s, t)
+
+# Gradient of expectation of complete-data log-likelihood
+gradient <- function(a, b, n, s, t){
+  c(
+    -2*t*a*b / (a+b)^3 + (2*s + n*(a-1))*trigamma(a) - (2*s + n*(a+b-2))*trigamma(a+b),
+    2*t*a^2 / (a+b)^3 + n*(b - 1)*trigamma(b) - (2*s + n*(a+b-2))*trigamma(a+b)
+  )
+}
+
+m <- sim(2,7, n)
+suff <- sufficient(m)
+s <- suff[1] 
+t <- suff[2]
+
+# E-M Algo
+N_iter <- 10000000
+
+params <- c(1,1)
+eps <- 0.001
+
+all_alphas <- 1
+all_betas <- 1
+for (i in 1:N_iter) {
+  gr <- gradient(params[1], params[2], n, suff[1], suff[2])
+  params <- params + eps*gr
+  if(i%%1000 == 0){
+    all_alphas <- c(all_alphas, params[1])
+    all_betas <- c(all_betas, params[2])
+  }
+}
+
+plot(all_alphas, main = "Estimate of alpha", xlab = "Iteration", ylab = "Value")
+plot(all_betas, main = "Estimate of beta", xlab = "Iteration", ylab = "Value")
+
+plot(all_alphas / (all_alphas + all_betas), main = "Estimate of alpha / (alpha + beta)", xlab = "Iteration", ylab = "Value")
+
+
+
