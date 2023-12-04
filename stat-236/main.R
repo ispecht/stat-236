@@ -55,16 +55,19 @@ true_tau <- true_mu*a*(1+a)/((a+b)*(1+a+b))
 
 # MoM estimate
 mom <- function(mu, tau){
-  a <- max(
-    -(-tau* mu^2 +mu^4+sqrt(tau^2 * mu * (tau-mu^2)^2))/(tau-mu^2)^2,
-    (-mu^4+mu^2 * tau+sqrt(mu *(mu^2-tau)^2 *tau^2))/(mu^2-tau)^2
-  )
-    
-    
+  a1 <- (-tau*sqrt(mu) + mu^2) / (tau - mu^2)
+  b1 <- (a - a * sqrt(mu))/sqrt(mu)
+  a2 <- (tau*sqrt(mu) + mu^2) / (tau - mu^2)
+  b2 <- -(a + a * sqrt(mu))/sqrt(mu)
   
+  if(a1 > 0 & b1 > 0){
+    return(c(a1,b1))
+  }else if(a2 > 0 & b2 > 0){
+    return(c(a2, b2))
+  }else{
+    return(c(NA,NA))
+  }
   
-  b <- (a - a * sqrt(mu))/sqrt(mu)
-  return(c(a,b))
 }
 
 # Monte Carlo
