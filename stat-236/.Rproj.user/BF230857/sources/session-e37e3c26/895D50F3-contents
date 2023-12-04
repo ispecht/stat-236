@@ -46,6 +46,7 @@ get_tau <- function(m){
     }
   }
   tau <- tau / (3 * choose(n,3))
+  tau
 }
 
 # What are the theoretical values of these quantities?
@@ -54,7 +55,11 @@ true_tau <- true_mu*a*(1+a)/((a+b)*(1+a+b))
 
 # MoM estimate
 mom <- function(mu, tau){
-  a <- - (-tau* mu^2 +mu^4+sqrt(tau^2 * mu * (tau-mu^2)^2))/(tau-mu^2)^2
+  a <- max(
+    -(-tau* mu^2 +mu^4+sqrt(tau^2 * mu * (tau-mu^2)^2))/(tau-mu^2)^2,
+    (-mu^4+mu^2 * tau+sqrt(mu *(mu^2-tau)^2 *tau^2))/(mu^2-tau)^2
+  )
+  
   b <- (a - a * sqrt(mu))/sqrt(mu)
   return(c(a,b))
 }
@@ -131,5 +136,12 @@ plot(all_betas, main = "Estimate of beta", xlab = "Iteration", ylab = "Value")
 
 plot(all_alphas / (all_alphas + all_betas), main = "Estimate of alpha / (alpha + beta)", xlab = "Iteration", ylab = "Value")
 
-
+### Fitting to empirical data
+load("ke_data.RData")
+data <- list(CoAuthor, Dolphin, Fan, Football, Karate, Polbooks, UKFaculty)
+fits <- list()
+for (i in 1:length(data)) {
+  fits[[i]] <- mom(get_mu(data[[i]]), get_tau(data[[i]]))
+}
+fits
 
